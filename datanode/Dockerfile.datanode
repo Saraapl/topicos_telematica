@@ -1,0 +1,15 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar todo el código del DataNode
+COPY dataNode/ /app/dataNode
+COPY block_config.py /app/
+COPY dataNode/protos /app/dataNode/protos
+COPY nameNode/db.py /app/nameNode/
+
+EXPOSE 50051
+CMD ["python", "-m", "dataNode.server"]

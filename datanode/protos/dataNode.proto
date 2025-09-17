@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package dataNode;
+
+message DirRequest {
+  string dir_name = 1;
+}
+
+service DataNodeService {
+  rpc StoreBlock (BlockRequest) returns (BlockReply);
+  rpc GetBlock (BlockRequest) returns (BlockReply);
+  rpc DeleteBlock (BlockRequest) returns (BlockReply);
+  rpc MakeDir (DirRequest) returns (BlockReply);
+  rpc DeleteDir (DirRequest) returns (BlockReply);
+}
+
+message BlockRequest {
+  string block_id = 1;
+  bytes data = 2;
+}
+
+message BlockReply {
+  string block_id = 1;
+  bytes data = 2;
+  string status = 3;
+}

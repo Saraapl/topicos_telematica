@@ -1,115 +1,68 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: griddfs
-      POSTGRES_USER: griddfs
-      POSTGRES_PASSWORD: griddfs123
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./data/postgres:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U griddfs -d griddfs"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    environment:
-      RABBITMQ_DEFAULT_USER: griddfs
-      RABBITMQ_DEFAULT_PASS: griddfs123
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - ./data/rabbitmq:/var/lib/rabbitmq
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   namenode:
     build:
       context: .
-      dockerfile: namenode/Dockerfile
+      dockerfile: nameNode/Dockerfile.namenode
+    container_name: namenode
     ports:
-      - "8001:8000"
-    environment:
-      - DATABASE_URL=postgresql://griddfs:griddfs123@postgres:5432/griddfs
-      - RABBITMQ_URL=amqp://griddfs:griddfs123@rabbitmq:5672/
-      - JWT_SECRET=your-secret-key-change-in-production
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      - "8000:8000"
     volumes:
-      - ./data/namenode:/app/data
+      - namenode_data:/app/data
     restart: unless-stopped
 
   datanode1:
     build:
       context: .
-      dockerfile: datanode/Dockerfile
+      dockerfile: dataNode/Dockerfile.datanode
+    container_name: datanode1
     environment:
-      - NODE_ID=datanode1
-      - RABBITMQ_URL=amqp://griddfs:griddfs123@rabbitmq:5672/
+      - DATANODE_PORT=50051
       - NAMENODE_URL=http://namenode:8000
-      - STORAGE_PATH=/app/storage
-      - STORAGE_CAPACITY=10737418240  # 10GB
+      - DATANODE_NAME=datanode1
+    ports:
+      - "50051:50051"
     volumes:
-      - ./data/datanode1:/app/storage
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      namenode:
-        condition: service_started
+      - datanode1_storage:/app/storage
     restart: unless-stopped
+    depends_on:
+      - namenode
 
   datanode2:
     build:
       context: .
-      dockerfile: datanode/Dockerfile
+      dockerfile: dataNode/Dockerfile.datanode
+    container_name: datanode2
     environment:
-      - NODE_ID=datanode2
-      - RABBITMQ_URL=amqp://griddfs:griddfs123@rabbitmq:5672/
+      - DATANODE_PORT=50051
       - NAMENODE_URL=http://namenode:8000
-      - STORAGE_PATH=/app/storage
-      - STORAGE_CAPACITY=10737418240  # 10GB
+      - DATANODE_NAME=datanode2
+    ports:
+      - "50052:50051"
     volumes:
-      - ./data/datanode2:/app/storage
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      namenode:
-        condition: service_started
+      - datanode2_storage:/app/storage
     restart: unless-stopped
+    depends_on:
+      - namenode
 
   datanode3:
     build:
       context: .
-      dockerfile: datanode/Dockerfile
+      dockerfile: dataNode/Dockerfile.datanode
+    container_name: datanode3
     environment:
-      - NODE_ID=datanode3
-      - RABBITMQ_URL=amqp://griddfs:griddfs123@rabbitmq:5672/
+      - DATANODE_PORT=50051
       - NAMENODE_URL=http://namenode:8000
-      - STORAGE_PATH=/app/storage
-      - STORAGE_CAPACITY=10737418240  # 10GB
+      - DATANODE_NAME=datanode3
+    ports:
+      - "50053:50051"
     volumes:
-      - ./data/datanode3:/app/storage
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      namenode:
-        condition: service_started
+      - datanode3_storage:/app/storage
     restart: unless-stopped
+    depends_on:
+      - namenode
 
-networks:
-  default:
-    driver: bridge
+volumes:
+  namenode_data:
+  datanode1_storage:
+  datanode2_storage:
+  datanode3_storage:

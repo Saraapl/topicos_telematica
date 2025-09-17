@@ -11,6 +11,14 @@ Permite registrar usuarios, autenticarse, listar archivos, subir/descargar archi
 crear/eliminar directorios y archivos, y manejar errores de DataNode y NameNode.
 """
 
+# Mapear nombres de contenedores a localhost con los puertos expuestos
+HOST_MAP = {
+    "datanode1": "localhost:50051",
+    "datanode2": "localhost:50052",
+    "datanode3": "localhost:50053",
+}
+
+
 # Configuración global
 NAMENODE_URL = "http://localhost:8000"
 # tamaño de bloque
@@ -177,7 +185,9 @@ def put_file(filepath, dfs_path=None):
     with open(filepath, "rb") as f:
         for i, assignment in enumerate(assignments):
             block_data = f.read(BLOCK_SIZE)
-            host, port = assignment["datanode"].split(":")
+            raw_host, raw_port = assignment["datanode"].split(":")
+            mapped = HOST_MAP.get(raw_host, f"{raw_host}:{raw_port}")
+            host, port = mapped.split(":")
             status = store_block(host, port, assignment["id"], block_data)
             print(f"Bloque {i} enviado a {host}:{port} → {status}")
 
@@ -193,7 +203,9 @@ def get_file(filename, output_path):
     with open(output_path, "wb") as f:
         all_ok = True
         for block in assignments:
-            host, port = block["datanode"].split(":")
+            raw_host, raw_port = block["datanode"].split(":")
+            mapped = HOST_MAP.get(raw_host, f"{raw_host}:{raw_port}")
+            host, port = mapped.split(":")
             data = get_block(host, port, block["id"])
             if data:
                 f.write(data)
